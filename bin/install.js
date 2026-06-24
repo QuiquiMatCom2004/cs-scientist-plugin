@@ -7,10 +7,17 @@ import { createInterface } from "node:readline";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTS_SRC = join(__dirname, "..", "agents");
+const SKILLS_SRC = join(__dirname, "..", "skills");
 
 const TARGETS = {
-  opencode: join(homedir(), ".config", "opencode", "agents"),
-  claude:   join(homedir(), ".claude", "agents"),
+  opencode: {
+    agents: join(homedir(), ".config", "opencode", "agents"),
+    skills: join(homedir(), ".config", "opencode", "skills"),
+  },
+  claude: {
+    agents: join(homedir(), ".claude", "agents"),
+    skills: join(homedir(), ".claude", "commands"),
+  },
 };
 
 const PLATFORM_PRESENCE = {
@@ -18,12 +25,26 @@ const PLATFORM_PRESENCE = {
   claude:   join(homedir(), ".claude"),
 };
 
-function copyAgents(dest) {
+function copyDir(src, dest, label) {
   mkdirSync(dest, { recursive: true });
-  const files = readdirSync(AGENTS_SRC).filter(f => f.endsWith(".md"));
+  const files = readdirSync(src).filter(f => f.endsWith(".md"));
   for (const file of files) {
-    copyFileSync(join(AGENTS_SRC, file), join(dest, file));
+    const destFile = join(dest, file);
+    if (existsSync(destFile)) {
+      console.log(`  ~ ${file} (already exists — skipped, use --force to overwrite)`);
+      continue;
+    }
+    copyFileSync(join(src, file), destFile);
     console.log(`  ✓ ${file}`);
+  }
+}
+
+function copyDirForce(src, dest) {
+  mkdirSync(dest, { recursive: true });
+  const files = readdirSync(src).filter(f => f.endsWith(".md"));
+  for (const file of files) {
+    copyFileSync(join(src, file), join(dest, file));
+    console.log(`  ✓ ${file} (overwritten)`);
   }
 }
 
@@ -45,19 +66,22 @@ async function main() {
   const args = process.argv.slice(2);
   const forceOpencode = args.includes("--opencode");
   const forceClaude   = args.includes("--claude");
+  const force         = args.includes("--force");
   const silent        = args.includes("--silent"); // used by postinstall
   const detected      = detect();
+
+  const copy = force ? copyDirForce : copyDir;
 
   let installOpencode = forceOpencode || (detected.opencode && !forceClaude);
   let installClaude   = forceClaude   || (detected.claude   && !forceOpencode);
 
   if (!silent && !forceOpencode && !forceClaude) {
     if (detected.opencode) {
-      const ans = await ask("Install agents for opencode? [Y/n] ");
+      const ans = await ask("Install agents + skills for opencode? [Y/n] ");
       installOpencode = ans === "" || ans === "y";
     }
     if (detected.claude) {
-      const ans = await ask("Install agents for Claude Code? [Y/n] ");
+      const ans = await ask("Install agents + skills for Claude Code? [Y/n] ");
       installClaude = ans === "" || ans === "y";
     }
   }
@@ -68,16 +92,23 @@ async function main() {
   }
 
   if (installOpencode) {
-    console.log(`\nInstalling for opencode → ${TARGETS.opencode}`);
-    copyAgents(TARGETS.opencode);
+    console.log(`\nInstalling agents for opencode → ${TARGETS.opencode.agents}`);
+    copy(AGENTS_SRC, TARGETS.opencode.agents);
+    console.log(`\nInstalling skills for opencode → ${TARGETS.opencode.skills}`);
+    copy(SKILLS_SRC, TARGETS.opencode.skills);
   }
 
   if (installClaude) {
-    console.log(`\nInstalling for Claude Code → ${TARGETS.claude}`);
-    copyAgents(TARGETS.claude);
+    console.log(`\nInstalling agents for Claude Code → ${TARGETS.claude.agents}`);
+    copy(AGENTS_SRC, TARGETS.claude.agents);
+    console.log(`\nInstalling skills for Claude Code → ${TARGETS.claude.skills}`);
+    copy(SKILLS_SRC, TARGETS.claude.skills);
   }
 
-  console.log("\nDone. Restart your tool to pick up the new agents.");
+  console.log("\nDone. Restart your tool to pick up the new agents and skills.");
+  if (!force) {
+    console.log("Tip: use --force to overwrite existing files on future updates.");
+  }
 }
 
 main().catch(err => { console.error(err.message); process.exit(1); });
