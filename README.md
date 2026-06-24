@@ -1,5 +1,10 @@
 # cs-scientist-plugin
 
+[![npm version](https://img.shields.io/npm/v/cs-scientist-plugin.svg)](https://www.npmjs.com/package/cs-scientist-plugin)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-supported-blueviolet.svg)](https://claude.ai/code)
+[![opencode](https://img.shields.io/badge/opencode-supported-blueviolet.svg)](https://opencode.ai)
+
 A multi-agent system for rigorous research, development, and teaching — built for [opencode](https://opencode.ai) and [Claude Code](https://claude.ai/code).
 
 The core principle is borrowed from DeepMind's most reliable systems (AlphaFold, AlphaProof, FunSearch):
@@ -7,6 +12,62 @@ The core principle is borrowed from DeepMind's most reliable systems (AlphaFold,
 > **The model proposes. An external verifier decides.**
 
 No self-assessed output advances to the next phase. Every gate is evaluated by a fresh agent with zero session context.
+
+---
+
+## How it works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    cs-scientist                         │
+│                   (Orchestrator)                        │
+│         health check → session init → dispatch          │
+└───────────┬──────────────┬──────────────┬──────────────┘
+            │              │              │
+     RESEARCH            DEV           TEACH
+    10 phases           7 phases       7 phases
+        │                  │              │
+   GATE_1,2,3        GATE_1,2          GATE_1,2,3
+        │                  │              │
+        └──────────────────┴──────────────┘
+                           │
+               ┌───────────▼───────────┐
+               │   cs-scientist-critic  │
+               │  (zero session context │
+               │   zero disk access)    │
+               │   PASS / FAIL /        │
+               │   HUMAN_REQUIRED       │
+               └───────────────────────┘
+```
+
+On `FAIL` → mode agent corrects (max 2 attempts), then `HUMAN_REQUIRED`.
+On domain-specific failure → `cs-scientist-consultant` resolves, then retry.
+
+---
+
+## Example: Critic rejecting a research hypothesis
+
+```
+[DISPATCH → cs-scientist-critic]
+GATE: GATE_3
+ARTIFACT:
+  HYPOTHESIS: Transformers outperform RNNs on sequential tasks
+  VERIFIER: Run both on Penn Treebank and compare perplexity
+  EVIDENCE: [FACT] transformers scale better, [FACT] attention is O(n²)
+---
+
+[cs-scientist-critic → RETURN]
+VERDICT: FAIL
+FAILURES:
+  - HYPOTHESIS is not falsifiable as stated: "outperform" has no threshold.
+    A result of 0.1 perplexity difference would technically satisfy it.
+    Rewrite: "Transformer achieves ≥5% lower perplexity on PTB vs best LSTM baseline."
+  - EVIDENCE cites [FACT] but neither fact directly supports the hypothesis.
+    [FACT] "transformers scale better" does not imply they outperform on PTB specifically.
+NEXT: Mode agent must rewrite hypothesis and re-submit to GATE_3.
+```
+
+The critic has **zero session context** — it cannot be talked out of a FAIL by prior conversation. Only the artifact matters.
 
 ---
 
