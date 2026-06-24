@@ -12,9 +12,11 @@
   },
   "files": [
     "agents/",
+    "skills/",
     "bin/",
     "index.js",
-    "README.md"
+    "README.md",
+    "PROTOCOL.md"
   ],
   "keywords": [
     "opencode",
@@ -33,6 +35,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/enriqueagm/cs-scientist-plugin.git"
+    "url": "https://github.com/QuiquiMatCom2004/cs-scientist-plugin.git"
   }
 }
