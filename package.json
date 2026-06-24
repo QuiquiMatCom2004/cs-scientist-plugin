@@ -1,6 +1,6 @@
 {
   "name": "cs-scientist-plugin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Verified Loop multi-agent system for rigorous research and development in opencode and Claude Code",
   "type": "module",
   "main": "./index.js",
