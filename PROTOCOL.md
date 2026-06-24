@@ -1,4 +1,4 @@
-# CS-Scientist Plugin — Communication Protocol v1.0
+# CS-Scientist Plugin — Communication Protocol v1.1
 
 This document is the authoritative contract for all agents in the plugin.
 Before writing or modifying any agent prompt, read this file.
@@ -12,15 +12,30 @@ Each agent has exactly one responsibility. If it does more than one thing, it is
 
 | Agent | Single Responsibility | Writes to disk | Reads from disk |
 |-------|-----------------------|---------------|-----------------|
-| `cs-scientist` | Routing + session init | `session_state.json` (init only) | `session_state.json` |
-| `cs-scientist-research` | Research loop (phases 1–10) | `session_state.json`, KB, logs | `session_state.json`, KB |
-| `cs-scientist-dev` | Dev loop (phases 1–7) | `session_state.json`, KB, logs | `session_state.json`, KB |
+| `cs-scientist` | Routing + session init | `session_state.json`, `goals.md` (init only) | `session_state.json` |
+| `cs-scientist-research` | Research loop (phases 1–10) | `session_state.json`, `goals.md`, `activity_log.jsonl`, KB | `session_state.json`, `goals.md`, `activity_log.jsonl` (last 5), KB |
+| `cs-scientist-dev` | Dev loop (phases 1–7) | `session_state.json`, `goals.md`, `activity_log.jsonl`, KB | `session_state.json`, `goals.md`, `activity_log.jsonl` (last 5), KB |
 | `cs-scientist-critic` | Gate validation | Nothing | Nothing |
 | `cs-scientist-consultant` | Domain diagnosis | Nothing | Nothing |
 | `cs-scientist-arbiter` | Council synthesis | Nothing | Nothing |
 
 Sub-agents (critic, consultant, arbiter) **never touch disk**.
 They receive structured input and return structured output. Period.
+Sub-agent outcomes are logged by the mode agent that called them, not by the sub-agent itself.
+
+---
+
+## Session Files
+
+Every session lives in `.cs-scientist/{session_id}/` relative to the project root.
+The session contains exactly these files:
+
+| File | Purpose | Append-only |
+|------|---------|-------------|
+| `session_state.json` | State machine — where the session is right now | No (overwritten) |
+| `goals.md` | Goal tracker — what the session is trying to achieve | No (updated) |
+| `activity_log.jsonl` | Action history — what each agent did per turn | Yes |
+| `knowledge_base.md` | Verified facts accumulator | No (updated) |
 
 ---
 
@@ -65,6 +80,72 @@ Everything else (KB, logs) is content. This is the state machine.
 - Mode agents write after every phase or gate transition — not before, not mid-phase
 - Sub-agents never write this file
 - If `next_action` is empty or ambiguous, the file is malformed
+
+---
+
+## goals.md
+
+Tracks what the session is trying to achieve at every level.
+Written by the orchestrator on init, updated by mode agents as work progresses.
+
+### Schema
+
+```markdown
+# Session Goals
+
+## Primary Goal
+{set at init, never modified — the overarching objective of this session}
+
+## Active
+- [ ] HIGH | {goal description} | phase: {phase_name}
+- [ ] MEDIUM | {goal description} | phase: {phase_name}
+- [ ] LOW | {goal description} | phase: {phase_name}
+
+## Completed
+- [x] {goal description} | closed_at: {phase_name} | result: {one sentence}
+
+## Blocked
+- [!] {goal description} | blocked_by: {reason} | unblocks_when: {condition}
+```
+
+### Write rules
+
+- Orchestrator writes the Primary Goal and initial Active goals at init
+- Orchestrator may also close or add goals if the user requests it mid-session
+- Mode agents add goals when a phase reveals new objectives
+- Mode agents move goals from Active → Completed after phase exit with a verified result
+- Mode agents move goals from Active → Blocked when a gate returns FAIL and the cause is unresolved
+- Priority values are fixed: `HIGH`, `MEDIUM`, `LOW` — no other values
+- Primary Goal section is never modified after init
+
+---
+
+## activity_log.jsonl
+
+Append-only log of every significant action. One JSON object per line.
+Mode agents read the last 5 entries at the start of every turn to reconstruct what happened in the previous context window.
+
+### Schema (one entry per line)
+
+```json
+{
+  "ts": "ISO8601",
+  "agent": "cs-scientist | cs-scientist-research | cs-scientist-dev",
+  "phase": "SCOPE | RETRIEVE | ...",
+  "action_type": "phase_enter | phase_complete | gate_dispatch | gate_return | subagent_dispatch | subagent_return | kb_update | goal_update | session_init | session_resume",
+  "summary": "≤1 sentence — what happened",
+  "result": "outcome or null",
+  "iteration": 0
+}
+```
+
+### Write rules
+
+- Written after every significant action — not every thought, every action
+- Significant actions: phase enter, phase complete, gate dispatch, gate return, sub-agent dispatch, sub-agent return, KB update, goal state change
+- Sub-agent outcomes are logged by the mode agent that called them, with `action_type: "subagent_return"`
+- Never rewrite or delete entries — append only
+- `iteration` increments on each full Verified Loop cycle, not on each action
 
 ---
 
@@ -153,9 +234,21 @@ FOR_CURRENT_CONTEXT:
 ## Iron Rule — applied in every agent prompt that touches disk
 
 ```
-FIRST action every turn: read session_state.json.
-LAST action after any phase or gate transition: write session_state.json.
+FIRST action every turn:
+  1. Read session_state.json
+  2. Read goals.md
+  3. Read last 5 entries of activity_log.jsonl
+
+AFTER every significant action:
+  4. Append one entry to activity_log.jsonl
+
+AFTER any phase or gate transition:
+  5. Update session_state.json
+  6. Update goals.md if goal state changed
+
 If session_state.json does not exist: stop and notify the user — do not improvise state.
+If activity_log.jsonl does not exist: create it empty, then proceed.
+If goals.md does not exist: stop and notify the user — do not improvise goals.
 ```
 
 This is not a guideline. It appears as a NEVER block in every mode agent.
@@ -188,3 +281,6 @@ Does the failure mention datasets, algorithms, libraries, domain terminology?
 
 When this protocol changes in a breaking way, increment `schema_version` in `session_state.json`.
 Mode agents must reject state files with a schema version they do not recognize.
+
+Current version: `1.1`
+Changes from `1.0`: Added `goals.md` and `activity_log.jsonl` to session files and Iron Rule.
