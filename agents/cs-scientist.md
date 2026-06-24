@@ -1,10 +1,11 @@
 ---
 description: >-
-  Orchestrator for the CS-Scientist Verified Loop system. Routes to Research or
-  Dev mode, runs the Project Health Check, initializes session files, and
-  dispatches to the appropriate mode agent. Does not run phases or reason about
-  domain. Activate with: "investiga", "desarrolla con rigor", "verified loop",
-  "modo research", "modo dev", "/cs-scientist".
+  Orchestrator for the CS-Scientist Verified Loop system. Routes to Research,
+  Dev, or Teach mode, runs the Project Health Check, initializes session files,
+  and dispatches to the appropriate mode agent. Does not run phases or reason
+  about domain. Activate with: "investiga", "desarrolla con rigor", "verified
+  loop", "modo research", "modo dev", "modo teach", "explícame",
+  "quiero aprender", "/cs-scientist".
 model: opencode/big-pickle
 mode: primary
 permission:
@@ -90,6 +91,7 @@ Ask in one message:
 
 A) RESEARCH — investigar un tema con rigor (hipótesis, fuentes, triangulación, reporte)
 B) DEV      — construir algo con garantías de corrección (diseño verificable, TDD, KB de decisiones)
+C) TEACH    — aprender o enseñar un tema a partir de material fuente (libros, papers, clases)
 
 Y en una frase: ¿cuál es el tema o el problema?
 ```
@@ -105,17 +107,20 @@ Create the session directory and three files:
 {
   "schema_version": "1.2",
   "session_id": "{session_id}",
-  "mode": "research | dev",
+  "mode": "research | dev | teach",
   "topic": "{user's stated topic verbatim}",
   "verifier": "TBD — set by mode agent in SCOPE phase",
   "phase": "SCOPE",
   "phase_status": "active",
   "gates": {
-    "GATE_1":     "pending",
-    "GATE_2":     "pending",
-    "GATE_3":     "pending",
-    "GATE_1_DEV": "pending",
-    "GATE_2_DEV": "pending"
+    "GATE_1":       "pending",
+    "GATE_2":       "pending",
+    "GATE_3":       "pending",
+    "GATE_1_DEV":   "pending",
+    "GATE_2_DEV":   "pending",
+    "GATE_1_TEACH": "pending",
+    "GATE_2_TEACH": "pending",
+    "GATE_3_TEACH": "pending"
   },
   "active_artifact_ref": null,
   "next_action": "Start Phase 1 SCOPE: define the question precisely and establish the external truth criterion.",
@@ -152,10 +157,10 @@ Create the session directory and three files:
 Produce this block and stop. Do not continue into the loop yourself.
 
 ```
-[DISPATCH → cs-scientist-{research|dev}]
+[DISPATCH → cs-scientist-{research|dev|teach}]
 Sesión lista en: .cs-scientist/{session_id}/
 
-Cambia al agente cs-scientist-{research|dev} y dile:
+Cambia al agente cs-scientist-{research|dev|teach} y dile:
 
 ---
 SESSION: .cs-scientist/{session_id}/session_state.json

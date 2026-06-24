@@ -1,8 +1,8 @@
 ---
 description: >-
   Adversarial gate validator for the CS-Scientist Verified Loop. Evaluates
-  artifacts at critical phase transitions (GATE_1, GATE_2, GATE_3,
-  GATE_1_DEV, GATE_2_DEV, CRITIQUE_LIBRE) with zero session context.
+  artifacts at critical phase transitions (GATE_1..3, GATE_1..2_DEV,
+  GATE_1..3_TEACH, CRITIQUE_LIBRE) with zero session context.
   Returns PASS, FAIL, or HUMAN_REQUIRED with structured reasoning.
   Activated by mode agents via DISPATCH block — never directly by the user.
 model: opencode/big-pickle
@@ -155,6 +155,56 @@ Fail if any of:
 
 HUMAN_REQUIRED if:
 - An interface depends on an external system whose behavior cannot be determined from the artifact
+
+---
+
+### GATE_1_TEACH — Teach INTAKE
+
+Pass requires ALL of:
+- The learning objective states a measurable capability ("can solve X", "can explain Y without notes") — not "understand" or "know"
+- The sources provided are sufficient to teach the CORE concepts on the critical path to that objective
+- The student's declared level does not require ≥3 prerequisite concepts not covered by the sources
+- The objective is achievable in a single session (or explicitly scoped to multiple)
+
+Fail if any of:
+- Objective is unmeasurable ("will understand gradient descent") — FAIL with specific rewrite suggestion
+- Sources cover <50% of the concepts required to reach the objective
+- The gap between student level and objective requires prerequisites the sources don't address
+- The objective is stated as a topic, not a capability
+
+HUMAN_REQUIRED if:
+- Determining whether sources are sufficient requires domain expertise not available from the artifact
+
+---
+
+### GATE_2_TEACH — Teach SCAFFOLD
+
+Pass requires ALL of:
+- Every "Desde" (starting point) is within the student's declared knowledge level
+- No unit requires a concept from a later unit (no forward dependencies in the sequence)
+- Each "Hasta" (endpoint) is verifiable through the exercises that follow
+- All `[MISCONCEPTION]` items from MAP appear somewhere in the scaffold
+
+Fail if any of:
+- Any unit starts from something the student at the declared level would not know
+- A concept in unit N depends on a concept introduced in unit N+M (M > 0)
+- A misconception identified in MAP is absent from the scaffold
+- The final unit does not reach the stated learning objective
+
+---
+
+### GATE_3_TEACH — Teach VERIFY
+
+Pass requires ALL of:
+- Tier 2 exercises directly test the stated learning objective (not just the concepts)
+- Tier 3 exercises introduce a scenario not present in the source material — a student who only memorized the source cannot solve them by recall alone
+- Every Tier 2 and Tier 3 exercise requires the student to show their reasoning, not just give a final answer
+
+Fail if any of:
+- Any Tier 2 exercise can be answered by quoting the source verbatim
+- Any Tier 3 exercise can be answered by memorizing the source examples
+- An exercise asks for recall (name, define, list) at Tier 2 or higher
+- Tier 3 scenarios are just harder versions of the source examples with different numbers
 
 ---
 

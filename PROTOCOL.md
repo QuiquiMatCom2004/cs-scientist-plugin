@@ -15,6 +15,7 @@ Each agent has exactly one responsibility. If it does more than one thing, it is
 | `cs-scientist` | Routing + session init | `session_state.json`, `goals.md` (init only) | `session_state.json` |
 | `cs-scientist-research` | Research loop (phases 1–10) | `session_state.json`, `goals.md`, `activity_log.jsonl`, KB | `session_state.json`, `goals.md`, `activity_log.jsonl` (last 5), KB |
 | `cs-scientist-dev` | Dev loop (phases 1–7) | `session_state.json`, `goals.md`, `activity_log.jsonl`, KB | `session_state.json`, `goals.md`, `activity_log.jsonl` (last 5), KB |
+| `cs-scientist-teach` | Teaching loop (phases 1–7) | `session_state.json`, `goals.md`, `activity_log.jsonl`, KB, `lesson.md` | `session_state.json`, `goals.md`, `activity_log.jsonl` (last 5), KB, sources |
 | `cs-scientist-critic` | Gate validation | Nothing | Nothing |
 | `cs-scientist-consultant` | Domain diagnosis | Nothing | Nothing |
 | `cs-scientist-arbiter` | Council synthesis | Nothing | Nothing |
@@ -52,15 +53,18 @@ Everything else (KB, logs) is content. This is the state machine.
   "topic": "string",
   "verifier": "string — external truth criterion",
 
-  "phase": "SCOPE | DECOMPOSE | RETRIEVE | TRIANGULATE | PROPOSE | EXPERIMENT | ANALYZE | SYNTHESIZE | CRITIQUE | DOCUMENT | DESIGN | PLAN | IMPLEMENT | VERIFY | ITERATE",
+  "phase": "SCOPE | DECOMPOSE | RETRIEVE | TRIANGULATE | PROPOSE | EXPERIMENT | ANALYZE | SYNTHESIZE | CRITIQUE | DOCUMENT | DESIGN | PLAN | IMPLEMENT | VERIFY | ITERATE | INTAKE | MAP | SCAFFOLD | EXPLAIN | ITERATE_TEACH",
   "phase_status": "active | blocked | completed",
 
   "gates": {
-    "GATE_1":     "pending | pass | fail",
-    "GATE_2":     "pending | pass | fail",
-    "GATE_3":     "pending | pass | fail",
-    "GATE_1_DEV": "pending | pass | fail",
-    "GATE_2_DEV": "pending | pass | fail"
+    "GATE_1":       "pending | pass | fail",
+    "GATE_2":       "pending | pass | fail",
+    "GATE_3":       "pending | pass | fail",
+    "GATE_1_DEV":   "pending | pass | fail",
+    "GATE_2_DEV":   "pending | pass | fail",
+    "GATE_1_TEACH": "pending | pass | fail",
+    "GATE_2_TEACH": "pending | pass | fail",
+    "GATE_3_TEACH": "pending | pass | fail"
   },
 
   "active_artifact_ref": "path or inline ID of artifact being worked on",
@@ -171,7 +175,7 @@ All inter-agent communication uses this envelope:
 
 **Dispatch payload:**
 ```
-GATE: GATE_1 | GATE_2 | GATE_3 | GATE_1_DEV | GATE_2_DEV | CRITIQUE_LIBRE
+GATE: GATE_1 | GATE_2 | GATE_3 | GATE_1_DEV | GATE_2_DEV | GATE_1_TEACH | GATE_2_TEACH | GATE_3_TEACH | CRITIQUE_LIBRE
 ARTIFACT:
 {artifact verbatim}
 ```
@@ -371,6 +375,50 @@ From the answers, generate a minimal `AGENTS.md` with these sections only:
 ```
 
 Omit any section for which the user had no answer. Do not pad with generic advice.
+
+---
+
+## Verifier Hierarchy
+
+Inspired by DeepMind's AlphaProof: the most rigorous verification is the most formal available.
+When defining the external truth criterion (SCOPE phase, GATE_1), choose the highest applicable level.
+
+```
+Level 1 — Formal (strongest)
+  Compiler, type checker, proof assistant (Lean, Coq), constraint solver.
+  If it compiles and type-checks, the property holds by construction.
+  Use when: type safety, protocol conformance, mathematical theorems.
+
+Level 2 — Automated test
+  Unit test, integration test, property-based test (Hypothesis, QuickCheck).
+  Executable and repeatable. Fails predictably.
+  Use when: functional correctness, contract compliance, regression prevention.
+
+Level 3 — Empirical measurement
+  Benchmark, statistical test, A/B comparison, reproducible experiment.
+  Results must be reproducible with the same seed/dataset.
+  Use when: performance, quality metrics, model evaluation.
+
+Level 4 — Expert review
+  A qualified human evaluates against explicit criteria.
+  The criteria must be written down before the review — not derived from the output.
+  Use when: no automated verifier exists for the property being checked.
+
+Level 5 — Self-assessment (weakest — avoid)
+  The model evaluates its own output.
+  Only acceptable as a preliminary filter before a higher-level verifier.
+  Never as the final gate.
+```
+
+### Rules
+
+- The mode agent declares the verifier level in `session_state.json` during SCOPE
+- Never accept a Level 5 verifier as a gate — it is a Verified Loop violation
+- If no verifier above Level 4 exists for a claim, the claim stays `[HYPOTHESIS]`
+- When multiple verifiers apply, use the highest level — do not settle for a lower one
+  because it is more convenient
+- Error messages from Level 1/2 verifiers feed back into the next attempt verbatim —
+  not summarized, not interpreted. The raw error is the structured input.
 
 ---
 
