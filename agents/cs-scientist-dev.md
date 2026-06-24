@@ -201,50 +201,105 @@ ARTIFACT:
 
 **Entry:** session_state.phase = PLAN
 
-**Work:**
-Write an ultra-detailed implementation plan from the DESIGN artifact. A fresh agent will validate it against the SCOPE objective — it must be unambiguous.
+**Plan save path:** `.cs-scientist/{session_id}/plan.md` (override writing-plans default location)
 
+### Step A — Generate the plan
+
+**Ecosystem check:**
 ```
-PLAN DE IMPLEMENTACIÓN:
-
-Orden de implementación (dependencias primero):
-1. {component} — {what it does} — Tests: {test names}
-2. {component} — {what it does} — Tests: {test names}
-...
-
-Por componente:
-## {Component N}
-- Input: {exact input}
-- Output: {exact output}
-- Edge cases: {list}
-- Test cases:
-  - {test}: expects {exact result}
-  - {test}: expects {exact result}
-- Integration with: {other components}
+Is the writing-plans skill available in this session?
+→ YES: invoke it. Follow its instructions to produce the plan. Save to plan.md in session dir.
+→ NO: produce the plan manually with the structure below.
 ```
 
-**Validation dispatch:**
+**If writing-plans is available:**
+Load the skill and follow it to produce a plan that meets its quality bar:
+- Every task is 2-5 minutes (bite-sized)
+- Every step that involves code contains the actual code — no placeholders
+- Exact file paths for every create/modify/test operation
+- TDD order: write failing test → run to verify fail → implement → run to verify pass → commit
+- Run the built-in self-review before saving (spec coverage, placeholder scan, type consistency)
+
+**If writing-plans is unavailable — manual plan structure:**
+```
+# {Feature Name} Implementation Plan
+
+**Goal:** {DONE_CUANDO from SCOPE verbatim}
+**Architecture:** {2-3 sentences from DESIGN}
+**Tech Stack:** {languages, frameworks, key libraries}
+
+---
+
+### Task N: {Component Name}
+
+**Files:**
+- Create: `exact/path/to/file`
+- Modify: `exact/path/to/existing:line-range`
+- Test: `tests/exact/path/to/test`
+
+- [ ] Step 1: Write the failing test
+  ```{lang}
+  {actual test code — no placeholders}
+  ```
+- [ ] Step 2: Run test — expected: FAIL with "{exact message}"
+  Run: `{exact command}`
+- [ ] Step 3: Write minimal implementation
+  ```{lang}
+  {actual implementation code}
+  ```
+- [ ] Step 4: Run test — expected: PASS
+  Run: `{exact command}`
+- [ ] Step 5: Commit
+  `git commit -m "{conventional commit message}"`
+```
+
+No placeholders. No "TBD". No "similar to Task N". Every step has its actual content.
+
+### Step B — Validate implementation quality
+
+Regardless of how the plan was generated, run the self-review checklist:
+- [ ] Spec coverage: every requirement from SCOPE has a task
+- [ ] No placeholders: search for "TBD", "TODO", "implement later", "similar to"
+- [ ] Type consistency: types/method names defined in Task N match usage in Task N+M
+- [ ] Every code step has actual code, not description of code
+
+Fix any issue found before proceeding to Step C.
+
+### Step C — Validate scope alignment
+
+Dispatch cs-scientist-critic to verify the plan solves the SCOPE objective — not implementation
+quality (Step B covers that), but whether the right thing is being built.
+
 ```
 [DISPATCH → cs-scientist-critic]
 ---
 GATE: CRITIQUE_LIBRE
 ARTIFACT:
 SCOPE_OBJETIVO: {DONE_CUANDO from Phase 1 verbatim}
+VERIFICADOR: {VERIFICADOR from Phase 1 verbatim}
 
-PLAN:
-{implementation plan verbatim}
+PLAN_SUMMARY:
+{list of Task names and their Goals — not the full plan, just the map}
 
-Valida: ¿el plan completo cumple el objetivo de SCOPE? ¿hay componentes del objetivo no cubiertos? ¿hay ambigüedades que bloquearían la implementación?
+Valida: ¿el conjunto de tareas cubre completamente el SCOPE_OBJETIVO?
+¿hay algún requisito del VERIFICADOR no cubierto por ninguna tarea?
+¿hay alguna tarea fuera del scope que debería eliminarse?
 ---
 ```
 
 **On PASS:**
-- Update session_state: phase=IMPLEMENT, next_action="Start Phase 4 IMPLEMENT: write tests for component 1 first, then minimal implementation. Do not write implementation before tests."
+- Update session_state: phase=IMPLEMENT, next_action="Start Phase 4 IMPLEMENT: execute plan.md task by task. Task 1: {first task name}. Write failing test first."
+- Update goals: mark PLAN goal complete, add IMPLEMENT goal
 - Log: action_type=subagent_return, result=pass
 
-**On FAIL:**
-- If gap in coverage (missing component) → add to plan and re-validate
-- If objective mismatch → return to DESIGN (the design does not solve the stated problem)
+**On FAIL — missing coverage:**
+- Add missing tasks to plan.md
+- Re-run self-review (Step B)
+- Re-dispatch critic (Step C) — max 2 attempts, then HUMAN_REQUIRED
+
+**On FAIL — scope mismatch** (plan builds the wrong thing):
+- Return to DESIGN — the design does not solve the stated problem
+- Update session_state: phase=DESIGN, next_action="Return to DESIGN: plan revealed scope mismatch — {specific mismatch from critic FAILURES}"
 - Log each retry
 
 ---

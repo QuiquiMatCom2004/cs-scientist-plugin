@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readdirSync, copyFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, copyFileSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -25,26 +25,21 @@ const PLATFORM_PRESENCE = {
   claude:   join(homedir(), ".claude"),
 };
 
-function copyDir(src, dest, label) {
+function copyDir(src, dest, force = false, indent = "  ") {
   mkdirSync(dest, { recursive: true });
-  const files = readdirSync(src).filter(f => f.endsWith(".md"));
-  for (const file of files) {
-    const destFile = join(dest, file);
-    if (existsSync(destFile)) {
-      console.log(`  ~ ${file} (already exists — skipped, use --force to overwrite)`);
-      continue;
+  for (const entry of readdirSync(src)) {
+    const srcPath = join(src, entry);
+    const destPath = join(dest, entry);
+    if (statSync(srcPath).isDirectory()) {
+      copyDir(srcPath, destPath, force, indent + "  ");
+    } else if (entry.endsWith(".md")) {
+      if (!force && existsSync(destPath)) {
+        console.log(`${indent}~ ${entry} (already exists — skipped, use --force to overwrite)`);
+        continue;
+      }
+      copyFileSync(srcPath, destPath);
+      console.log(`${indent}✓ ${entry}${force && existsSync(destPath) ? " (overwritten)" : ""}`);
     }
-    copyFileSync(join(src, file), destFile);
-    console.log(`  ✓ ${file}`);
-  }
-}
-
-function copyDirForce(src, dest) {
-  mkdirSync(dest, { recursive: true });
-  const files = readdirSync(src).filter(f => f.endsWith(".md"));
-  for (const file of files) {
-    copyFileSync(join(src, file), join(dest, file));
-    console.log(`  ✓ ${file} (overwritten)`);
   }
 }
 
@@ -70,7 +65,7 @@ async function main() {
   const silent        = args.includes("--silent"); // used by postinstall
   const detected      = detect();
 
-  const copy = force ? copyDirForce : copyDir;
+  const copy = (src, dest) => copyDir(src, dest, force);
 
   let installOpencode = forceOpencode || (detected.opencode && !forceClaude);
   let installClaude   = forceClaude   || (detected.claude   && !forceOpencode);
