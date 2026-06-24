@@ -1,0 +1,38 @@
+{
+  "name": "cs-scientist-plugin",
+  "version": "0.1.0",
+  "description": "Verified Loop multi-agent system for rigorous research and development in opencode and Claude Code",
+  "type": "module",
+  "main": "./index.js",
+  "bin": {
+    "cs-scientist-plugin": "./bin/install.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/install.js --silent"
+  },
+  "files": [
+    "agents/",
+    "bin/",
+    "index.js",
+    "README.md"
+  ],
+  "keywords": [
+    "opencode",
+    "claude-code",
+    "ai-agent",
+    "research",
+    "verified-loop",
+    "cs-scientist",
+    "multi-agent",
+    "knowledge-base"
+  ],
+  "author": "enriqueagm <kikialeglez@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enriqueagm/cs-scientist-plugin.git"
+  }
+}
