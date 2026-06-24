@@ -60,11 +60,14 @@ Sub-agents (critic, consultant, arbiter) **never touch disk**. They receive a st
 
 ```bash
 npm install -g cs-scientist-plugin
+cs-scientist-plugin
 ```
 
-The postinstall script detects which tools you have and asks before copying anything.
+The first command installs the package. The second copies agents and skills into your tool — it detects opencode and Claude Code automatically and asks before writing anything.
 
-**Manual install:**
+> **Note:** npm blocks postinstall scripts by default since npm v10. Running `cs-scientist-plugin` after install is required.
+
+**Clone and install manually:**
 
 ```bash
 git clone https://github.com/QuiquiMatCom2004/cs-scientist-plugin.git
