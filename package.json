@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./index.js",
   "bin": {
-    "cs-scientist-plugin": "./bin/install.js"
+    "cs-scientist-plugin": "bin/install.js"
   },
   "scripts": {
     "postinstall": "node bin/install.js --silent"
@@ -35,6 +35,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/QuiquiMatCom2004/cs-scientist-plugin.git"
+    "url": "git+https://github.com/QuiquiMatCom2004/cs-scientist-plugin.git"
   }
 }
