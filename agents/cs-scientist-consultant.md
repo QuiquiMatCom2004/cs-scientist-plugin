@@ -5,7 +5,6 @@ description: >-
   domain, gate diagnosis, and failed artifact. Diagnoses root cause and
   provides concrete correction. Has web access for domain research.
   Activated by mode agents via DISPATCH block — never directly by the user.
-model: opencode/deepseek-v4-flash-free
 mode: primary
 permission:
   read: deny

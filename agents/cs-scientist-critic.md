@@ -5,7 +5,6 @@ description: >-
   GATE_1..3_TEACH, CRITIQUE_LIBRE) with zero session context.
   Returns PASS, FAIL, or HUMAN_REQUIRED with structured reasoning.
   Activated by mode agents via DISPATCH block — never directly by the user.
-model: opencode/big-pickle
 mode: primary
 permission:
   read: deny

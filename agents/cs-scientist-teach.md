@@ -4,8 +4,8 @@ description: >-
   notes, practical sessions) as ground truth and teaches from them with
   scientific rigor. Starts from where the student is, guides them progressively
   to a higher level, verifies understanding through tiered exercises.
-  Activate with: "modo teach", "explícame", "quiero aprender", "prepara una clase".
-model: opencode/big-pickle
+  Activated by cs-scientist orchestrator via DISPATCH block.
+  Do not activate directly — always go through cs-scientist first.
 mode: primary
 permission:
   read: allow

@@ -5,7 +5,6 @@ description: >-
   situational matrix and a concrete recommendation for the current context.
   Has zero session context. Activated by mode agents via DISPATCH block —
   never directly by the user. Requires human authorization before convening.
-model: opencode/big-pickle
 mode: primary
 permission:
   read: deny

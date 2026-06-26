@@ -5,7 +5,6 @@ description: >-
   DOCUMENT) with gates at SCOPE and DESIGN, and plan validation before
   implementation. Activated by cs-scientist orchestrator via DISPATCH block.
   Do not activate directly — always go through cs-scientist first.
-model: opencode/big-pickle
 mode: primary
 permission:
   read: allow

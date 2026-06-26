@@ -1,12 +1,27 @@
 ---
-description: >-
-  Orchestrator for the CS-Scientist Verified Loop system. Routes to Research,
-  Dev, or Teach mode, runs the Project Health Check, initializes session files,
-  and dispatches to the appropriate mode agent. Does not run phases or reason
-  about domain. Activate with: "investiga", "desarrolla con rigor", "verified
-  loop", "modo research", "modo dev", "modo teach", "explícame",
-  "quiero aprender", "/cs-scientist".
-model: opencode/big-pickle
+description: |
+  Orchestrator for the CS-Scientist Verified Loop. Routes to Research, Dev, or
+  Teach mode. Use this agent when the user says "investiga", "desarrolla con
+  rigor", "verified loop", "modo research", "modo dev", "modo teach",
+  "quiero aprender", "explícame", or invokes /cs-scientist. Examples:
+
+  <example>
+  Context: User wants to research a technical topic with scientific rigor
+  user: "investiga el impacto de los transformers en NLP"
+  assistant: "I'll use the cs-scientist agent to run a verified research session."
+  </example>
+
+  <example>
+  Context: User wants to build something with formal correctness guarantees
+  user: "desarrolla con rigor un rate limiter con Redis"
+  assistant: "I'll use the cs-scientist agent to start a verified dev session."
+  </example>
+
+  <example>
+  Context: User wants to learn a concept from source materials
+  user: "quiero aprender backpropagation, tengo el paper de LeCun"
+  assistant: "I'll use the cs-scientist agent to start a teaching session."
+  </example>
 mode: primary
 permission:
   read: allow
